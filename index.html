@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grab Rider Strategy Radar - โซนมหาสมบัติ (กทม.)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace'],
+                    },
+                    colors: {
+                        grab: {
+                            DEFAULT: '#00B14F',
+                            dark: '#008A3D',
+                            light: '#00E065'
+                        },
+                        darkbg: {
+                            950: '#070A0E',
+                            900: '#0D1218',
+                            800: '#151D26',
+                            700: '#1E2936',
+                            600: '#2A3849'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #070A0E;
+            color: #F9FAFB;
+            font-family: 'Prompt', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0.6); }
+            70% { box-shadow: 0 0 0 16px rgba(0, 177, 79, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0); }
+        }
+        .btn-pulse {
+            animation: pulseGlow 2.2s infinite;
+        }
+        p, h1, h2, h3, h4, span, div, li, button, label, a, input, select {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-14 selection:bg-grab selection:text-white">
+
+    <!-- Main Container: Strictly 4 Sections in exact flow (Section 2 -> Section 1 -> Section 3 -> Section 4) -->
+    <main class="max-w-lg mx-auto px-3.5 pt-4 space-y-4">
+
+        <!-- Custom Message Banner (No alert() or confirm()) -->
+        <div id="toast-box" class="hidden fixed top-3 left-3 right-3 max-w-lg mx-auto z-50 rounded-2xl p-3.5 shadow-2xl border transition-all duration-300 flex items-start gap-3">
+            <i id="toast-icon" class="fa-solid fa-circle-info text-lg mt-0.5 shrink-0"></i>
+            <div id="toast-message" class="text-sm font-medium leading-relaxed flex-1"></div>
+            <button type="button" onclick="hideToast()" class="text-gray-300 hover:text-white p-1 shrink-0" aria-label="ปิดการแจ้งเตือน">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- ส่วนที่ 2: ปุ่มกด "ฉันอยู่ที่นี่"                                       -->
+        <!-- (เมื่อกดปุ่มแล้วให้ระบบแสดงส่วนที่ 1 แล้วส่งคำสั่งไปส่วนที่ 3)               -->
+        <!-- ===================================================================== -->
+        <section id="section-2">
+            <button type="button" id="btn-iam-here" onclick="handleIamHereClick()"
+                class="w-full btn-pulse bg-gradient-to-r from-grab-dark via-grab to-grab-light hover:brightness-105 active:scale-[0.98] transition-all duration-200 text-white rounded-2xl p-4 sm:p-5 shadow-xl shadow-grab/30 border-2 border-green-300/50 flex items-center justify-center gap-3.5 cursor-pointer">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/20 flex items-center justify-center shrink-0">
+                    <i id="btn-iam-here-icon" class="fa-solid fa-location-dot text-2xl sm:text-3xl text-white"></i>
+                </div>
+                <div class="text-left flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-black/30 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">ส่วนที่ 2</span>
+                        <span class="text-xs font-semibold text-green-50">โซนมหาสมบัติ • กทม.</span>
+                    </div>
+                    <div id="btn-iam-here-title" class="text-xl sm:text-2xl font-extrabold tracking-tight leading-tight mt-0.5">ฉันอยู่ที่นี่</div>
+                    <div id="btn-iam-here-sub" class="text-xs sm:text-sm text-green-50 font-medium mt-0.5 leading-snug">
+                        กดเพื่อแสดงพิกัด GPS จริงในส่วนที่ 1 และส่งคำสั่งไปส่วนที่ 3
+                    </div>
+                </div>
+            </button>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- ส่วนที่ 1: ส่วนแสดงลองติจูดละติจูด แสดงจุดตำแหน่งที่ตั้ง GPS ตามความเป็นจริง -->
+        <!-- พร้อมแสดงวันที่และเวลา (เปิดแสดงเมื่อกดปุ่มส่วนที่ 2)                       -->
+        <!-- ===================================================================== -->
+        <section id="section-1" class="hidden bg-darkbg-800 border border-darkbg-600 rounded-2xl p-4 shadow-xl space-y-3.5">
+            <div class="flex items-center justify-between border-b border-darkbg-600 pb-2.5 gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="bg-grab/20 text-grab-light text-xs font-bold px-2.5 py-1 rounded-lg border border-grab/40 shrink-0">ส่วนที่ 1</span>
+                    <h1 class="text-sm sm:text-base font-bold text-white leading-snug">พิกัด GPS ตามความเป็นจริง & วันเวลา</h1>
+                </div>
+                <span id="gps-status-badge" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold shrink-0">
+                    <i class="fa-solid fa-satellite-dish mr-1"></i>กำลังจับ GPS
+                </span>
+            </div>
+
+            <!-- Real-time Date & Clock (Thailand Time) -->
+            <div class="bg-darkbg-900 rounded-xl p-3.5 border border-darkbg-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div>
+                    <div class="text-xs text-gray-400 mb-0.5"><i class="fa-regular fa-calendar mr-1.5 text-grab-light"></i>วันที่ปัจจุบัน</div>
+                    <div id="live-date" class="text-sm sm:text-base font-bold text-white">กำลังอ่านวันที่...</div>
+                </div>
+                <div class="sm:text-right border-t sm:border-t-0 border-darkbg-700 pt-2 sm:pt-0">
+                    <div class="text-xs text-gray-400 mb-0.5"><i class="fa-regular fa-clock mr-1.5 text-amber-400"></i>เวลาปัจจุบัน</div>
+                    <div id="live-clock" class="text-xl sm:text-2xl font-extrabold font-mono text-grab-light tracking-wider">--:--:-- น.</div>
+                </div>
+            </div>
+
+            <!-- 5 Mandatory Shift Rounds Status for Mahasombat Zone -->
+            <div class="bg-darkbg-900 rounded-xl p-3.5 border border-grab/40 space-y-1.5">
+                <div class="text-xs font-bold text-grab-light">
+                    <i class="fa-solid fa-bolt mr-1"></i>รอบจองวิ่งงาน โซนมหาสมบัติ (GrabFood & GrabMart • เปิดรับ Auto)
+                </div>
+                <div id="current-shift-title" class="text-sm sm:text-base font-bold text-white leading-snug">กำลังตรวจสอบรอบวิ่งงาน...</div>
+                <p id="current-shift-desc" class="text-xs text-gray-300 leading-relaxed">กำลังวิเคราะห์ช่วงเวลาเปิดรับออเดอร์...</p>
+            </div>
+
+            <!-- Real GPS Latitude & Longitude -->
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-darkbg-900 rounded-xl p-3.5 border border-darkbg-700">
+                    <div class="text-xs text-gray-400 mb-1">ละติจูด (Latitude)</div>
+                    <div id="display-lat" class="text-base sm:text-lg font-mono font-extrabold text-white">--.------</div>
+                </div>
+                <div class="bg-darkbg-900 rounded-xl p-3.5 border border-darkbg-700">
+                    <div class="text-xs text-gray-400 mb-1">ลองจิจูด (Longitude)</div>
+                    <div id="display-lng" class="text-base sm:text-lg font-mono font-extrabold text-white">---.------</div>
+                </div>
+            </div>
+
+            <!-- Real GPS Accuracy & Status -->
+            <div class="bg-darkbg-900/80 rounded-xl p-3 border border-darkbg-700 flex items-start justify-between gap-2 text-xs">
+                <span class="text-gray-400 shrink-0"><i class="fa-solid fa-location-crosshairs text-grab-light mr-1"></i>ความแม่นยำ GPS:</span>
+                <span id="gps-detail-text" class="text-gray-200 font-medium text-right leading-relaxed">กำลังรอสัญญาณดาวเทียม GPS จริงจากอุปกรณ์...</span>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- ส่วนที่ 3: การแสดงผล 3 ตัวเลือกที่ระบบอัลกอริทึมแนะนำ (ปรึกษา Gemini AI)  -->
+        <!-- ===================================================================== -->
+        <section id="section-3" class="bg-darkbg-800 border border-darkbg-600 rounded-2xl p-4 shadow-xl space-y-4">
+            <div class="border-b border-darkbg-600 pb-3 space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-amber-500/40 shrink-0">ส่วนที่ 3</span>
+                        <h2 class="text-sm sm:text-base font-bold text-white leading-snug">3 ตัวเลือกจุดจอดรองานที่ดีที่สุด</h2>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-200 bg-darkbg-900 px-2.5 py-1 rounded-lg border border-darkbg-700 shrink-0">
+                        ระยะทางน้อย <i class="fa-solid fa-arrow-right mx-1 text-grab-light"></i> มาก
+                    </span>
+                </div>
+                <p id="algo-summary-banner" class="text-xs text-gray-300 leading-relaxed">
+                    กดปุ่ม <span class="text-grab-light font-bold">"ฉันอยู่ที่นี่"</span> ด้านบน เพื่อให้ระบบจับพิกัด GPS จริงและปรึกษากับ <span class="text-amber-300 font-semibold">Gemini AI</span> สืบค้นขอบเขตพื้นที่อันละเอียดของ <span class="text-sky-300 font-semibold">โซนมหาสมบัติ</span> (ไม่เอาพื้นที่นอกโซนเข้ามาปน) และคัดเลือก 3 จุดจอดที่ดีที่สุด
+                </p>
+
+                <!-- Optional Gemini API Key Bar for Direct Live AI Consultation -->
+                <div class="bg-darkbg-900/90 rounded-xl p-2.5 border border-darkbg-700 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-semibold text-gray-300">
+                            <i class="fa-solid fa-robot text-grab-light mr-1"></i>สถานะการเชื่อมต่อ Gemini AI ภายนอก:
+                        </span>
+                        <button type="button" onclick="toggleGeminiKeyBox()" class="text-[11px] text-sky-300 hover:text-sky-200 underline font-semibold cursor-pointer">
+                            ตั้งค่า Gemini API Key
+                        </button>
+                    </div>
+                    <div id="gemini-key-panel" class="hidden pt-1 space-y-2">
+                        <div class="flex gap-2">
+                            <input type="password" id="gemini-api-key-input" placeholder="วาง Gemini API Key (AIzaSy...)" class="flex-1 bg-darkbg-800 border border-darkbg-600 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-grab">
+                            <button type="button" onclick="saveGeminiApiKey()" class="bg-grab hover:bg-grab-dark text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">
+                                บันทึก Key
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            จัดเก็บ Key ไว้ในอุปกรณ์ของคุณเพื่อเชื่อมต่อ Gemini 3 Flash + Google Search สดๆ หากไม่ได้ใส่ Key ระบบจะใช้ข้อมูลขอบเขตโซนมหาสมบัติที่สืบค้นไว้แล้วในการคำนวณ
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mahasombat Zone Boundary Insight from Gemini AI -->
+            <div id="mahasombat-zone-box" class="hidden bg-darkbg-900 rounded-xl p-3.5 border border-sky-500/40 space-y-1.5">
+                <div class="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <span>ขอบเขตพื้นที่อันละเอียดของ "โซนมหาสมบัติ" (เฉพาะในโซน ไม่ปนพื้นที่นอกโซน)</span>
+                </div>
+                <p id="mahasombat-zone-detail" class="text-xs text-gray-200 leading-relaxed"></p>
+            </div>
+
+            <!-- Status / Waiting / Loading State -->
+            <div id="section-3-status-box" class="py-6 px-4 text-center space-y-2.5 bg-darkbg-900/90 rounded-xl border border-darkbg-700">
+                <div id="section-3-status-icon" class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-grab/15 text-grab-light text-xl">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                </div>
+                <h3 id="section-3-status-title" class="text-sm sm:text-base font-bold text-white">พร้อมรับคำสั่งจากปุ่ม "ฉันอยู่ที่นี่"</h3>
+                <p id="section-3-status-desc" class="text-xs text-gray-300 leading-relaxed max-w-md mx-auto">
+                    เมื่อกดปุ่ม "ฉันอยู่ที่นี่" ระบบจะแสดงพิกัด GPS จริงในส่วนที่ 1 และให้อัลกอริทึมปรึกษากับ Gemini AI เพื่อควานหาจุดจอดรองานที่ดีที่สุด 3 ตัวเลือกในโซนมหาสมบัติ (ไม่เกิน 5 กม. เป็นลำดับแรก)
+                </p>
+            </div>
+
+            <!-- 3 Recommendations Output Container -->
+            <div id="recommendations-container" class="space-y-4"></div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- ส่วนที่ 4: ส่วนปักหมุดรายการร้านเพิ่มเติม (จัดเก็บในอุปกรณ์)              -->
+        <!-- ===================================================================== -->
+        <section id="section-4" class="bg-darkbg-800 border border-darkbg-600 rounded-2xl p-4 shadow-xl space-y-4">
+            <div class="border-b border-darkbg-600 pb-3 space-y-1.5">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-purple-500/20 text-purple-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-purple-500/40 shrink-0">ส่วนที่ 4</span>
+                        <h2 class="text-sm sm:text-base font-bold text-white leading-snug">ปักหมุดรายการร้านเพิ่มเติม</h2>
+                    </div>
+                    <span id="saved-pins-count" class="text-xs font-bold bg-darkbg-900 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/40 shrink-0">0 หมุด</span>
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    ปักหมุดพิกัด GPS และช่วงเวลารอบวิ่งของร้านเพิ่มเติม บันทึกชื่อร้านและประเภท (ร้านอาหาร หรือ ร้านมาร์ท) ลงในอุปกรณ์ หากโอกาสหน้าอยู่ใกล้ตำแหน่งที่บันทึกไว้ ระบบจะนำไปวิเคราะห์เป็น 1 ใน 3 ตัวเลือกในส่วนที่ 3
+                </p>
+            </div>
+
+            <!-- Add / Edit Form -->
+            <form id="custom-pin-form" onsubmit="saveCustomPin(event)" class="bg-darkbg-900 rounded-xl p-3.5 border border-darkbg-700 space-y-3.5">
+                <input type="hidden" id="edit-pin-id" value="">
+                <div class="flex items-center justify-between gap-2">
+                    <h3 id="pin-form-title" class="text-sm font-bold text-grab-light">
+                        <i class="fa-solid fa-map-pin mr-1.5"></i>เพิ่มหมุดร้าน / จุดจอดใหม่
+                    </h3>
+                    <button type="button" id="btn-cancel-edit" onclick="resetPinForm()" class="hidden text-xs text-red-400 hover:text-red-300 underline cursor-pointer">
+                        ยกเลิกการแก้ไข
+                    </button>
+                </div>
+
+                <!-- Store Name -->
+                <div>
+                    <label for="pin-name" class="block text-xs font-semibold text-gray-200 mb-1">ชื่อร้าน / จุดจอด <span class="text-red-400">*</span></label>
+                    <input type="text" id="pin-name" required placeholder="ระบุชื่อร้านอาหาร ร้านมาร์ท หรือซอยจุดจอดจริง" class="w-full bg-darkbg-800 border border-darkbg-600 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-grab">
+                </div>
+
+                <!-- Store Category -->
+                <div>
+                    <label for="pin-type" class="block text-xs font-semibold text-gray-200 mb-1">ประเภทร้าน <span class="text-red-400">*</span></label>
+                    <select id="pin-type" class="w-full bg-darkbg-800 border border-darkbg-600 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-grab">
+                        <option value="ร้านอาหาร (GrabFood)">ร้านอาหาร (GrabFood)</option>
+                        <option value="ร้านมาร์ท (GrabMart)">ร้านมาร์ท (GrabMart)</option>
+                        <option value="ร้านอาหารและร้านมาร์ท (GrabFood + GrabMart)">ร้านอาหารและร้านมาร์ท (GrabFood + GrabMart)</option>
+                    </select>
+                </div>
+
+                <!-- Shift Rounds -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-200 mb-1.5">ช่วงเวลารอบวิ่งงาน <span class="text-red-400">*</span></label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <label class="flex items-center gap-2.5 bg-darkbg-800 p-2.5 rounded-lg border border-darkbg-600 cursor-pointer hover:border-grab/60">
+                            <input type="checkbox" name="pin-shifts" value="1" class="w-4 h-4 accent-grab rounded shrink-0">
+                            <span class="text-xs text-gray-100 leading-snug">รอบที่ (1) 05.30 น. ถึง 08.00 น.</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-darkbg-800 p-2.5 rounded-lg border border-darkbg-600 cursor-pointer hover:border-grab/60">
+                            <input type="checkbox" name="pin-shifts" value="2" class="w-4 h-4 accent-grab rounded shrink-0">
+                            <span class="text-xs text-gray-100 leading-snug">รอบที่ (2) 08.00 น. ถึง 10.30 น.</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-darkbg-800 p-2.5 rounded-lg border border-darkbg-600 cursor-pointer hover:border-grab/60">
+                            <input type="checkbox" name="pin-shifts" value="3" checked class="w-4 h-4 accent-grab rounded shrink-0">
+                            <span class="text-xs text-gray-100 leading-snug">รอบที่ (3) 10.30 น. ถึง 13.30 น.</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-darkbg-800 p-2.5 rounded-lg border border-darkbg-600 cursor-pointer hover:border-grab/60">
+                            <input type="checkbox" name="pin-shifts" value="4" class="w-4 h-4 accent-grab rounded shrink-0">
+                            <span class="text-xs text-gray-100 leading-snug">รอบที่ (4) 13.30 น. ถึง 16.00 น.</span>
+                        </label>
+                        <l
